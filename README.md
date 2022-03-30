@@ -1,6 +1,6 @@
 # PIXXIO Backend Homecase
 
-Compile & Run:
+Instructions:
 
 1. Clone this github repository
 2. Compile the code using `go build` and execute the generated binary which starts the webserver
