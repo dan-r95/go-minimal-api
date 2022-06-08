@@ -14,3 +14,5 @@ You are allowed to change everything in the code and use external libraries of y
 ## Setup:
 * build image: `docker build --tag little-api .`
 * run image as container: `docker run little-api --name my-api`
+
+!todo: use blob store for caching

@@ -1,12 +1,23 @@
 # taken from: https://docs.docker.com/language/golang/build-images/
-FROM golang:1.18-alpine
+FROM ubuntu:22.04
 
-WORKDIR /app
-
+COPY --from=golang:1.18-alpine /usr/local/go/ /usr/local/go/
+ENV PATH="/usr/local/go/bin:${PATH}"
+RUN echo $PATH
+RUN ls /usr/local/go
+RUN go
 
 #TODO: add database
+RUN yes | apt-get update
+RUN yes | apt-get upgrade
+
+# otherwise, prompts are shown while installing
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Moscow
+RUN yes | apt-get install postgresql postgresql-contrib
 
 
+WORKDIR /app
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
