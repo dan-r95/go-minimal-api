@@ -8,3 +8,9 @@ Instructions:
 4. Modify the code according to the 'Homecase' instructions and tasks given to you by pixx.io
 
 You are allowed to change everything in the code and use external libraries of your choice.
+
+
+
+## Setup:
+* build image: `docker build --tag little-api .`
+* run image as container: `docker run little-api --name my-api`

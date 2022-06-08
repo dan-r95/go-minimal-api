@@ -2,13 +2,23 @@ package main
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 )
 
+var (
+	supportedTypes = []string{"application/jpeg", "application/tiff", "application/png"}
+)
+
 func main() {
+	logger, _ := zap.NewProduction()
+	defer logger.Sync() // flushes buffer, if any
+
+	sugar := logger.Sugar()
+	sugar.Infow("started my image api")
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ping", pingHandler)
@@ -34,11 +44,22 @@ func pingHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func uploadFileHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	// validate len and mime content type
+	contentType := req.Header.Get("Content-type")
+	if req.ContentLength > 2*10^7 || !strings.Contains(strings.Join(supportedTypes, ","), contentType) {
+		http.Error(w, "Supported file types: "+strings.Join(supportedTypes, ","), http.StatusBadRequest)
+		return
+	}
 	file, fileHandler, err := req.FormFile("file")
 	if err != nil {
 		http.Error(w, "Error when parsing the uploaded file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	defer file.Close()
 
 	// Create a new file in the uploads directory
@@ -61,6 +82,12 @@ func uploadFileHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func serveFileHandler(w http.ResponseWriter, req *http.Request) {
+	hasSize(req)
 	requestedFile := strings.TrimPrefix(req.URL.Path, "/serve/")
 	http.ServeFile(w, req, "uploads/"+requestedFile)
+}
+
+func hasSize(req *http.Request) string {
+	params := req.URL.Query()
+	return params.Get("size")
 }
