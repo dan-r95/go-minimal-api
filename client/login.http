@@ -17,3 +17,11 @@ var parsed = JSON.parse(response.body);
 client.global.set("auth_token", parsed.access_token);
 %}
 
+
+
+### upload
+POST {{url}}/{{rest}}/upload
+
+
+### Serve
+GET {{url}}/{{rest}}/serve

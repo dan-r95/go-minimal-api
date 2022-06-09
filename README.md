@@ -1,4 +1,4 @@
-# My minimal image api
+# minimal image api :rocket:
 
 
 ## Docker Image:

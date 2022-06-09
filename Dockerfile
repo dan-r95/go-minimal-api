@@ -8,7 +8,7 @@ RUN yes | apt-get upgrade
 RUN yes | apt-get install curl
 
 # install golang
-RUN curl -s https://storage.googleapis.com/golang/go1.18.3.linux-amd64.tar.gz| tar -v -C /usr/local -xz
+RUN curl -s https://storage.googleapis.com/golang/go1.18.3.linux-amd64.tar.gz| tar -v -C /usr/local -xz  > /dev/null
 ENV PATH="/usr/local/go/bin:${PATH}"
 
 ENV  DB_HOST=db

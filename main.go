@@ -33,7 +33,7 @@ func main() {
 	e.POST("/upload", uploadFileHandler)
 	e.GET("/serve/", serveFileHandler)
 
-	e.POST("/auth/auth", lg.Login)
+	e.POST("/auth/login", lg.Login)
 	e.POST("/auth/register", lg.Register)
 
 	// Prepare upload directory
@@ -44,7 +44,7 @@ func main() {
 	}
 
 	// Start Webserver
-	if err := http.ListenAndServe(":8090", e); err != nil {
+	if err = http.ListenAndServe(":8090", e); err != nil {
 		fmt.Println("Error starting the webserver:", err.Error())
 		return
 	}

@@ -1,6 +1,7 @@
 version: '3.1'
 
 services:
+  # see: https://hub.docker.com/_/postgres
   db:
     image: postgres
     env_file:
