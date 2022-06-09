@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/dan-r95/go-minimal-api/login"
 	"github.com/labstack/echo/v4"
+	"go-minimal-api/auth"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -19,23 +19,25 @@ func main() {
 	// init logger
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
-
 	sugar := logger.Sugar()
 	sugar.Infow("started my image api")
 
-	lg := login.Login{}
-	lg.Setup()
+	lg := auth.Login{Logger: logger}
+	err := lg.Setup()
+	if err != nil {
+		fmt.Println("Error setting up the db:", err.Error())
+	}
 
 	e := echo.New()
 	e.GET("/ping", pingHandler)
 	e.POST("/upload", uploadFileHandler)
 	e.GET("/serve/", serveFileHandler)
 
-	e.POST("/auth/login", lg.Login)
+	e.POST("/auth/auth", lg.Login)
 	e.POST("/auth/register", lg.Register)
 
 	// Prepare upload directory
-	err := os.MkdirAll("./uploads", os.ModePerm)
+	err = os.MkdirAll("./uploads", os.ModePerm)
 	if err != nil {
 		fmt.Println("Error creating the uploads directory:", err.Error())
 		return

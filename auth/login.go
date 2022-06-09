@@ -1,9 +1,13 @@
-package login
+package auth
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
+)
 
 type Login struct {
-	d database
+	d      database
+	Logger *zap.Logger
 }
 
 func (l Login) Register(c echo.Context) error {
@@ -15,5 +19,6 @@ func (l Login) Login(c echo.Context) error {
 }
 
 func (l Login) Setup() error {
+	l.d = database{nil, l.Logger.Sugar()}
 	return l.d.create()
 }

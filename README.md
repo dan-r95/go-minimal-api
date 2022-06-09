@@ -1,17 +1,15 @@
 # My minimal image api
 
 
-## Setup:
+## Docker Image:
 * build image: `docker build --tag little-api .`
-* run image as container: `docker run little-api --name my-api`
+* run containers via docker-compose: `docker-compose up`
+* Can also run image as container: `docker run --name my-api little-api`.
 
-!todo: use blob store for caching
 
 ### Local:
 * deploy postgres db with
-`docker run --name postgres -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_DB=mini-db -p 9920:5432 -d postgres`
-
-
+`docker run --name postgres -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_DB=mini-db -p 5432:5432 -d postgres`
+* Run the main file. `source user.env && go build go-minimal-api`. This assumes you have the environment variables set in `user.env` on your system
+* For GoLand this is not needed. Uses [Env file plugin for variables](https://plugins.jetbrains.com/plugin/7861-envfile).
 * Postman requests can be found in `postman_collection.json` and in `*.http` files.
-
-
