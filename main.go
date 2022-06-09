@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"go-minimal-api/auth"
+	"go-minimal-api/uploads"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -28,10 +30,15 @@ func main() {
 		fmt.Println("Error setting up the db:", err.Error())
 	}
 
+	store, _ := uploads.NewStorage(context.Background())
+	if err != nil {
+		fmt.Println("Error setting up the storage:", err.Error())
+	}
+
 	e := echo.New()
 	e.GET("/ping", pingHandler)
-	e.POST("/upload", uploadFileHandler)
-	e.GET("/serve/", serveFileHandler)
+	e.POST("/upload", uploadFileHandler, store)
+	e.GET("/serve/", serveFileHandler, store)
 
 	e.POST("/auth/login", lg.Login)
 	e.POST("/auth/register", lg.Register)
@@ -54,7 +61,7 @@ func pingHandler(c echo.Context) error {
 	return c.String(http.StatusOK, "Pong")
 }
 
-func uploadFileHandler(c echo.Context) error {
+func uploadFileHandler(c echo.Context, storage) error {
 	req := c.Request()
 	// validate len and mime content type
 	contentType := req.Header.Get("Content-type")
