@@ -1,0 +1,19 @@
+### Ping
+GET {{url}}/{{rest}}/ping
+
+
+### Login
+POST {{url}}/{{rest}}/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "daniel@daniel",
+  "password": "test-pw"
+}
+
+> {%
+var parsed = JSON.parse(response.body);
+client.global.set("auth_token", parsed.access_token);
+%}
+

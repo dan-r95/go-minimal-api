@@ -1,12 +1,6 @@
 # taken from: https://docs.docker.com/language/golang/build-images/
 FROM ubuntu:22.04
 
-COPY --from=golang:1.18-alpine /usr/local/go/ /usr/local/go/
-ENV PATH="/usr/local/go/bin:${PATH}"
-RUN echo $PATH
-RUN ls /usr/local/go
-RUN go
-
 #TODO: add database
 RUN yes | apt-get update
 RUN yes | apt-get upgrade
@@ -14,7 +8,13 @@ RUN yes | apt-get upgrade
 # otherwise, prompts are shown while installing
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Moscow
+RUN yes | apt-get install curl
 RUN yes | apt-get install postgresql postgresql-contrib
+
+
+# install golang and db
+RUN curl -s https://storage.googleapis.com/golang/go1.18.3.linux-amd64.tar.gz| tar -v -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
 
 
 WORKDIR /app

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"backend-homecase/login"
 	"fmt"
+	"github.com/dan-r95/go-minimal-api/login"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"io"

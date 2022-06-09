@@ -12,7 +12,7 @@ type database struct {
 }
 
 func (d database) create() (err error) {
-	dsn := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
+	dsn := "host=localhost user=postgres password=mysecretpassword dbname=mini-db port=9920 sslmode=disable TimeZone=Asia/Shanghai"
 	d.db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return errors.New("failed to connect database")
