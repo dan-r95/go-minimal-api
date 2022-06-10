@@ -19,13 +19,34 @@ var (
 	RExpMail         = regexp.MustCompile("^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)+$")
 )
 
-// database defines the persistence layer, including creation and look up of users
-type database struct {
-	db *gorm.DB
-	*zap.SugaredLogger
+type (
+	Database interface {
+		Login(req LoginRequest) error
+		Register(req RegistrationRequest) error
+	}
+
+	// database defines the persistence layer, including creation and look up of users
+	database struct {
+		db *gorm.DB
+		*zap.SugaredLogger
+	}
+)
+
+func New(logger *zap.SugaredLogger) (Database, error) {
+	return newDatabase(logger)
 }
 
-func (d *database) setup() (db *gorm.DB, err error) {
+// creates a new repository by using the provided database
+func newDatabase(logger *zap.SugaredLogger) (Database, error) {
+	dbCon, err := setup()
+	if err != nil {
+		return nil, err
+	}
+	db := &database{dbCon, logger}
+	return db, nil
+}
+
+func setup() (db *gorm.DB, err error) {
 	port, err := strconv.ParseInt(os.Getenv("POSTGRES_PORT"), 10, 64)
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
 		os.Getenv("DB_HOST"),
@@ -33,7 +54,7 @@ func (d *database) setup() (db *gorm.DB, err error) {
 		os.Getenv("POSTGRES_PASSWORD"),
 		os.Getenv("POSTGRES_DB"), port,
 	)
-	d.Infow("db env", "env", dsn)
+	//d.Infow("db env", "env", dsn)
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, errors.New("failed to connect database")

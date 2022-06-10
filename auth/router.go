@@ -6,20 +6,29 @@ import (
 	"net/http"
 )
 
-type Login struct {
-	d      database
-	Logger *zap.Logger
+type (
+	LoginRequest struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	RegistrationRequest struct {
+		Email        string `json:"email"`
+		Password     string `json:"password"`
+		Confirmation string `json:"confirmation"`
+	}
+
+	Login struct {
+		d      Database
+		Logger *zap.Logger
+	}
+)
+
+func NewLogin(logger *zap.SugaredLogger) (Database, error) {
+	return newDatabase(logger)
 }
 
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-type RegistrationRequest struct {
-	Email        string `json:"email"`
-	Password     string `json:"password"`
-	Confirmation string `json:"confirmation"`
+func newLogin(logger *zap.SugaredLogger) (Database, error) {
 }
 
 func (l Login) Register(c echo.Context) (err error) {
@@ -41,13 +50,11 @@ func (l Login) Login(c echo.Context) (err error) {
 }
 
 func (l Login) Setup() error {
-	db := &database{nil, l.Logger.Sugar()}
-	l.d = *db
-	if dbCon, err := l.d.setup(); err != nil {
+	db, err := New(l.Logger.Sugar())
+	if err != nil {
 		return err
-	} else {
-		db.db = dbCon
 	}
+	l.d = db
 	return nil
 }
 
