@@ -1,36 +1,21 @@
 package uploads
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"github.com/disintegration/imaging"
+	"fmt"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/fileblob"
 	"gocloud.dev/gcerrors"
-	"io/ioutil"
 	"mime/multipart"
-	"net/http"
 	"net/url"
 	"path/filepath"
 	"strconv"
-	"strings"
 )
 
-// add caching, repository
-
-func ResizeImage(mimeType string, size int, res []byte) ([]byte, error) {
-	if format, err := imaging.FormatFromExtension(strings.TrimPrefix(mimeType, "image/")); err != nil {
-		return nil, errors.New("unreadable")
-	} else if img, err2 := imaging.Decode(bytes.NewReader(res)); err2 != nil {
-		return nil, errors.New("unreadable")
-	} else {
-		buffer := new(bytes.Buffer)
-		croppedImg := imaging.Fill(img, size, size, imaging.Center, imaging.NearestNeighbor)
-		err = imaging.Encode(buffer, croppedImg, format)
-		return buffer.Bytes(), err
-	}
-}
+var (
+	supportedTypes = []string{"application/jpeg", "application/tiff", "application/png"}
+)
 
 type (
 	// BlobStore is the representation of the file persistence
@@ -50,9 +35,12 @@ type (
 		MimeType string
 		Length   uint64
 	}
-)
 
-//TODO: if in map / bucket, retrieve, otherwise resize and add to bucket
+	ResourceRequest struct {
+		File FileHeader `formFile:"image"`
+		Name string     `form:"name"`
+	}
+)
 
 func NewStorage(ctx context.Context) (*BlobStore, error) {
 	//adding  a  cloud store is possible
@@ -67,7 +55,7 @@ func NewStorage(ctx context.Context) (*BlobStore, error) {
 	return &BlobStore{ctx: ctx, store: opener, base: filepath.Clean(path)}, nil
 }
 
-func (bs *BlobStore) GetImage(name uint64, size uint) (b []byte, err error) {
+func (bs *BlobStore) GetImage(name string, size string) (b []byte, err error) {
 	var buck *blob.Bucket
 	if buck, err = bs.getBucket(name); err == nil {
 		defer func() { _ = buck.Close() }()
@@ -76,21 +64,30 @@ func (bs *BlobStore) GetImage(name uint64, size uint) (b []byte, err error) {
 			err = errors.New("not found")
 		}
 	}
+	//TODO: if size not there yet, resize it and store
+	//ResizeImage()
+	err = bs.StoreImage(name, size, b)
 	return
 }
-func (bs *BlobStore) StoreSample(appName uint64, req FileHeader) error {
-	data, mimeType, err := ReadImage(req)
+
+func (bs *BlobStore) StoreRawImage(name string, size string, req FileHeader) error {
+	data, _, err := ReadImageAndValidate(req)
 	if err != nil {
 		return err
 	}
 
-	buck, err := bs.getBucket(appName)
+	return bs.StoreImage(name, size, data)
+}
+
+func (bs *BlobStore) StoreImage(name string, size string, data []byte) error {
+
+	buck, err := bs.getBucket(name)
 	if err != nil {
 		return err
 	}
 
 	defer func() { _ = buck.Close() }()
-	return buck.WriteAll(bs.ctx, "0", data, nil)
+	return buck.WriteAll(bs.ctx, fmt.Sprintf("%s/%s", name, size), data, nil)
 }
 
 func (bs *BlobStore) keyString(key uint64) string {
@@ -98,37 +95,7 @@ func (bs *BlobStore) keyString(key uint64) string {
 }
 
 func (bs *BlobStore) getBucket(name string) (*blob.Bucket, error) {
-	return bs.bucket(keyString(name)), nil
-}
-
-func ReadImage(req FileHeader) ([]byte, string, error) {
-	if req == nil {
-		return nil, "", errors.New("invalid payload")
-	}
-
-	file, err := req.Open()
-	if err != nil {
-		return nil, "", errors.New("unreadable")
-	}
-	defer func() { _ = file.Close() }()
-
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, "", errors.New("unreadable")
-	}
-
-	if l := len(data); l == 0 || (l > 2*10^7) {
-		return nil, "", errors.New("invalid payload")
-	}
-
-	switch mimeType := http.DetectContentType(data); mimeType {
-	case "image/tiff",
-		"image/jpeg",
-		"image/png":
-		return data, mimeType, nil
-	default:
-		return nil, "", errors.New("invalid payload")
-	}
+	return bs.bucket(name)
 }
 
 func (bs *BlobStore) bucket(seg ...string) (*blob.Bucket, error) {
