@@ -3,7 +3,7 @@ GET {{url}}/{{rest}}/ping
 
 
 ### Login
-POST {{url}}/{{rest}}/login
+POST {{url}}/{{rest}}/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -17,6 +17,8 @@ var parsed = JSON.parse(response.body);
 client.global.set("auth_token", parsed.access_token);
 %}
 
+### Login
+POST {{url}}/{{rest}}/register
 
 
 ### upload

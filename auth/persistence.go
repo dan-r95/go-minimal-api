@@ -43,7 +43,8 @@ func (d *database) setup() (db *gorm.DB, err error) {
 		return nil, err
 	}
 
-	if err = db.Create(&User{PasswordHash: "D42", Email: "test-mail@mtest.de"}).Error; err != nil {
+	hashedPW, _ := bcrypt.GenerateFromPassword([]byte("test-pw"), bcrypt.DefaultCost)
+	if err = db.Create(&User{PasswordHash: string(hashedPW), Email: "daniel@test.de"}).Error; err != nil {
 		return nil, err
 	}
 	return
@@ -67,7 +68,7 @@ func (d *database) Login(req LoginRequest) error {
 func (d *database) Register(req RegistrationRequest) error {
 	if req.Email == "" || !RExpMail.MatchString(req.Email) || req.Password != req.Confirmation {
 		return ErrCredentials
-	} else if hash, err := createHash(req.Password); err != nil {
+	} else if hash, err := d.createHash(req.Password); err != nil {
 		return err
 	} else {
 		return d.db.Transaction(func(tx *gorm.DB) error {
@@ -77,14 +78,15 @@ func (d *database) Register(req RegistrationRequest) error {
 	}
 }
 
-func createHash(password string) (string, error) {
+func (d *database) createHash(password string) (string, error) {
 	if password == "" || !RExpPass.MatchString(password) {
 		return "", ErrCredentials
 	}
 
 	if b, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost); err != nil {
 		// a password which cannot be encrypted has to lead to a panic
-		panic(fmt.Errorf("encryption of password failed: %s", err.Error()))
+		d.SugaredLogger.Errorw("encryption of password failed: %s", err.Error())
+		return "", errors.New("encryption of password failed")
 	} else {
 		return string(b), nil
 	}
@@ -93,3 +95,9 @@ func createHash(password string) (string, error) {
 func verify(passwordHash, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
 }
+
+func createToken() {
+	//TODO implement
+}
+
+//TODO: would also add some kind of refresh token

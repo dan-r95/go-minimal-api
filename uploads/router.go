@@ -2,8 +2,20 @@ package uploads
 
 import (
 	"github.com/labstack/echo/v4"
+	"mime/multipart"
 	"net/http"
 	"strings"
+)
+
+type (
+	FileHeader interface {
+		Open() (multipart.File, error)
+	}
+
+	ResourceRequest struct {
+		File FileHeader `formFile:"image"`
+		Name string     `form:"name"`
+	}
 )
 
 func UploadFileHandler(c echo.Context, storage *BlobStore) error {
@@ -12,7 +24,7 @@ func UploadFileHandler(c echo.Context, storage *BlobStore) error {
 		return present(c, http.StatusBadRequest, nil, err)
 	}
 
-	err := storage.StoreRawImage(res.Name, "0", res.File)
+	err := storage.StoreRawImage(res.Name, "0", &res)
 	if err != nil {
 		return present(c, http.StatusBadRequest, nil, err)
 	}

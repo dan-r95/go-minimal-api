@@ -7,14 +7,9 @@ import (
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/fileblob"
 	"gocloud.dev/gcerrors"
-	"mime/multipart"
 	"net/url"
 	"path/filepath"
 	"strconv"
-)
-
-var (
-	supportedTypes = []string{"application/jpeg", "application/tiff", "application/png"}
 )
 
 type (
@@ -25,23 +20,15 @@ type (
 		ctx   context.Context
 	}
 
-	FileHeader interface {
-		Open() (multipart.File, error)
-	}
-
 	Store struct {
 		Save     func() error
 		Close    func()
 		MimeType string
 		Length   uint64
 	}
-
-	ResourceRequest struct {
-		File FileHeader `formFile:"image"`
-		Name string     `form:"name"`
-	}
 )
 
+// NewStorage creates a new blob store
 func NewStorage(ctx context.Context) (*BlobStore, error) {
 	//adding  a  cloud store is possible
 	opener :=
@@ -55,32 +42,40 @@ func NewStorage(ctx context.Context) (*BlobStore, error) {
 	return &BlobStore{ctx: ctx, store: opener, base: filepath.Clean(path)}, nil
 }
 
+// GetImage returns the image with name and size from the storage. if specific size
+// cannot be found, it tries to resize the image and store it.
+// if the image has not been found at all, returns an error
 func (bs *BlobStore) GetImage(name string, size string) (b []byte, err error) {
 	var buck *blob.Bucket
 	if buck, err = bs.getBucket(name); err == nil {
 		defer func() { _ = buck.Close() }()
-		b, err = buck.ReadAll(bs.ctx, name)
+		b, err = buck.ReadAll(bs.ctx, size)
+		//TODO: find if original picture was there
 		if gcerrors.Code(err) == gcerrors.NotFound {
 			err = errors.New("not found")
 		}
 	}
+	//TODO: also save the image format somewhere
 	//TODO: if size not there yet, resize it and store
 	//ResizeImage()
-	err = bs.StoreImage(name, size, b)
+	//err = bs.StoreImage(name, size, b)
 	return
 }
 
-func (bs *BlobStore) StoreRawImage(name string, size string, req FileHeader) error {
-	data, _, err := ReadImageAndValidate(req)
+// StoreRawImage reads the image contents from the filer header and on success
+// stores it in the blob store
+func (bs *BlobStore) StoreRawImage(name string, size string, req *ResourceRequest) error {
+	data, _, err := ReadImageAndValidate(req.File)
 	if err != nil {
 		return err
 	}
 
-	return bs.StoreImage(name, size, data)
+	return bs.StoreImage(name, "raw", data)
 }
 
+//StoreImage writes the image to the blob store. directory syntax is "imagename/size".
+// original upload is called "imagename/raw"
 func (bs *BlobStore) StoreImage(name string, size string, data []byte) error {
-
 	buck, err := bs.getBucket(name)
 	if err != nil {
 		return err

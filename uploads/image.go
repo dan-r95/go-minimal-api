@@ -13,7 +13,11 @@ var (
 	MaxSize = 2*10 ^ 7 // 20 mb
 )
 
+// ResizeImage extracts the image type from the file upload and then resizes it to specific type
 func ResizeImage(mimeType string, size int, res []byte) ([]byte, error) {
+	if size < 30 || size > 3000 {
+		return nil, errors.New("specify size between {30,3000} px ")
+	}
 	if format, err := imaging.FormatFromExtension(strings.TrimPrefix(mimeType, "image/")); err != nil {
 		return nil, errors.New("unreadable")
 	} else if img, err2 := imaging.Decode(bytes.NewReader(res)); err2 != nil {
@@ -26,6 +30,7 @@ func ResizeImage(mimeType string, size int, res []byte) ([]byte, error) {
 	}
 }
 
+// ReadImageAndValidate extracts content and file type from the raw image
 func ReadImageAndValidate(req FileHeader) ([]byte, string, error) {
 	if req == nil {
 		return nil, "", errors.New("invalid payload")
